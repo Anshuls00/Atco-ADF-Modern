@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_RESOURCE_GROUP: "AnshulSinha-rg"  # Apna actual RG name daalo
-  DEV_ADF_NAME: "atcopoc-devadf"          # Apna dev ADF name
-  PROD_ADF_NAME: "atcopoc-prodadf"        # Apna prod ADF name
-  AZURE_LOCATION: "East US"               # Apni location
+  AZURE_RESOURCE_GROUP: "AnshulSinha-rg"  
+  DEV_ADF_NAME: "atcopoc-devadf"          
+  PROD_ADF_NAME: "atcopoc-prodadf"      
+  AZURE_LOCATION: "East US"               
 
 jobs:
   build:
