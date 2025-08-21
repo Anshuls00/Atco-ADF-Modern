@@ -1,11 +1,8 @@
 {
-  "name": "atco-adf-modern",
-  "version": "1.0.0",
-  "description": "Modern ADF CI/CD setup",
-  "scripts": {
-    "build": "node node_modules/@microsoft/azure-data-factory-utilities/lib/index"
-  },
-  "dependencies": {
-    "@microsoft/azure-data-factory-utilities": "^2.0.0"
-  }
+    "scripts":{
+        "build":"node node_modules/@microsoft/azure-data-factory-utilities/lib/index"
+    },
+    "dependencies":{
+        "@microsoft/azure-data-factory-utilities":"^1.0.0"
+    }
 }
