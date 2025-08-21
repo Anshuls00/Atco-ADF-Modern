@@ -24,7 +24,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          # cache: 'npm'  # YE LINE REMOVE KAR DIYA
           
       - name: Azure Login
         uses: azure/login@v2
@@ -32,7 +31,8 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
           
       - name: Install packages
-        run: npm install
+        run: |
+          npm install @microsoft/azure-data-factory-utilities@1.0.0
         
       - name: Validate ADF
         run: |
@@ -68,10 +68,25 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
           
-      - name: Deploy to Production
-        uses: azure/data-factory-deploy-action@v1.2.0
-        with:
-          resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
-          dataFactoryName: ${{ env.PROD_ADF_NAME }}
-          armTemplateFile: ARMTemplateForFactory.json
-          armTemplateParametersFile: ARMTemplateParametersForFactory.json
+      - name: Set Azure Subscription
+        run: |
+          az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+          
+      - name: List Downloaded Files (Debug)
+        run: |
+          echo "Downloaded files:"
+          ls -la
+          echo "Current directory: $(pwd)"
+          
+      - name: Deploy ARM Template
+        run: |
+          echo "Deploying to Production ADF..."
+          az deployment group create \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --template-file ARMTemplateForFactory.json \
+            --parameters @ARMTemplateParametersForFactory.json \
+            --parameters factoryName=${{ env.PROD_ADF_NAME }} \
+            --mode Incremental \
+            --verbose
+          
+          echo "Deployment completed successfully!"
