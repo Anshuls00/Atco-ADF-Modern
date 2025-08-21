@@ -1,0 +1,77 @@
+name: Modern ADF Pipeline
+on:
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+env:
+  AZURE_RESOURCE_GROUP: "AnshulSinha-rg"  # Apna actual RG name daalo
+  DEV_ADF_NAME: "atcopoc-devadf"          # Apna dev ADF name
+  PROD_ADF_NAME: "atcopoc-prodadf"        # Apna prod ADF name
+  AZURE_LOCATION: "East US"               # Apni location
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      template-name: ${{ steps.artifact.outputs.name }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
+      - name: Install packages
+        run: npm install
+        
+      - name: Validate ADF
+        run: |
+          npm run build validate ${{ github.workspace }} /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}/providers/Microsoft.DataFactory/factories/${{ env.DEV_ADF_NAME }}
+          
+      - name: Generate Templates
+        run: |
+          npm run build export ${{ github.workspace }} /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}/providers/Microsoft.DataFactory/factories/${{ env.DEV_ADF_NAME }} "Templates"
+          
+      - name: Upload Templates
+        uses: actions/upload-artifact@v4
+        with:
+          name: ARM-Templates-${{ github.run_number }}
+          path: ${{ github.workspace }}/Templates/
+          
+      - name: Set output
+        id: artifact
+        run: echo "name=ARM-Templates-${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+  deploy-prod:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Download Templates
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.template-name }}
+          
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
+      - name: Deploy to Production
+        uses: azure/data-factory-deploy-action@v1.2.0
+        with:
+          resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
+          dataFactoryName: ${{ env.PROD_ADF_NAME }}
+          armTemplateFile: ARMTemplateForFactory.json
+          armTemplateParametersFile: ARMTemplateParametersForFactory.json
